@@ -38,20 +38,19 @@ controller.setupWebserver(process.env.port || 3000, function (err, webserver) {
 controller.api.nlp.enable();
 controller.api.messenger_profile.greeting('Greetings message!');
 controller.api.messenger_profile.menu([{
-        "locale": "default",
-        "call_to_actions": [{
-                "title": "Main menu",
-                "type": "postback",
-                "payload": "main_menu"
-            },
-            {
-                "title": "Goods catalog",
-                "type": "postback",
-                "payload": "shop"
-            }
-        ]
-    }
-]);
+    "locale": "default",
+    "call_to_actions": [{
+            "title": "Main menu",
+            "type": "postback",
+            "payload": "main_menu"
+        },
+        {
+            "title": "Goods catalog",
+            "type": "postback",
+            "payload": "shop"
+        }
+    ]
+}]);
 
 // returns the bot's messenger code image
 controller.hears(['code'], 'message_received,facebook_postback', function (bot, message) {
@@ -92,32 +91,43 @@ controller.hears(['quick'], 'message_received', function (bot, message) {
 });
 
 controller.on('facebook_postback', function (bot, message) {
-    console.log(bot, message);
+    // console.log(bot, message);
     bot.reply(message, {
-        text: "Nice to see you in my shop!",
+        text: "Nice to see you here! Choose something below",
         quick_replies: [{
-            "content_type": "text",
-            "title": "My purchases",
-            "payload": "my_purchases",
-        },
-        {
-            "content_type": "text",
-            "title": "Shop",
-            "payload": "shop",
-        },
-        {
-            "content_type": "text",
-            "title": "Favorites",
-            "payload": "favorites",
-        },
-        {
-            "content_type": "text",
-            "title": "Invite a friend",
-            "payload": "invite_a_friend",
-        }]
+                "content_type": "text",
+                "title": "My purchases",
+                "payload": "my_purchases",
+            },
+            {
+                "content_type": "text",
+                "title": "Shop",
+                "payload": "shop",
+            },
+            {
+                "content_type": "text",
+                "title": "Favorites",
+                "payload": "favorites",
+            },
+            {
+                "content_type": "text",
+                "title": "Invite a friend",
+                "payload": "invite_a_friend",
+            }
+        ]
     });
 });
 
+controller.hears(['My purchases', 'my_purchases'], 'facebook_postback, message_received', function (bot, message) {
+    bot.reply(message, {
+        text: "There is a list of your purchases:",
+        quick_replies: [{
+            "content_type": "text",
+            "title": "Back",
+            "payload": "back"
+        }]
+    });
+});
 
 controller.hears(['call me (.*)', 'my name is (.*)'], 'message_received', function (bot, message) {
     var name = message.match[1];
