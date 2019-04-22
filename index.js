@@ -1,4 +1,7 @@
+/* eslint-disable no-shadow */
 require('dotenv').config();
+
+const os = require('os');
 
 function formatUptime(time) {
   let unit = 'second';
@@ -37,7 +40,6 @@ if (!process.env.app_secret) {
   process.exit(1);
 }
 
-const os = require('os');
 const Botkit = require('./node_modules/botkit/lib/Botkit');
 
 const controller = Botkit.facebookbot({
@@ -74,7 +76,7 @@ controller.api.messenger_profile.menu([{
 }]);
 
 // returns the bot's messenger code image
-controller.hears(['code'], 'message_received,facebook_postback', (message) => {
+controller.hears(['code'], 'message_received,facebook_postback', (bot, message) => {
   controller.api.messenger_profile.get_messenger_code(2000, (err, url) => {
     if (err) {
       // Error
@@ -92,7 +94,7 @@ controller.hears(['code'], 'message_received,facebook_postback', (message) => {
   });
 });
 
-controller.hears(['quick'], 'message_received', (message) => {
+controller.hears(['quick'], 'message_received', (bot, message) => {
   bot.reply(message, {
     text: 'Menu',
     quick_replies: [{
@@ -109,7 +111,7 @@ controller.hears(['quick'], 'message_received', (message) => {
   });
 });
 
-controller.on('facebook_postback', (message) => {
+controller.on('facebook_postback', (bot, message) => {
   // console.log(bot, message);
   bot.reply(message, {
     text: 'Nice to see you here! Choose something below',
@@ -137,7 +139,7 @@ controller.on('facebook_postback', (message) => {
   });
 });
 
-controller.hears(['My purchases', 'my_purchases'], 'facebook_postback, message_received', (message) => {
+controller.hears(['My purchases', 'my_purchases'], 'facebook_postback, message_received', (bot, message) => {
   bot.reply(message, {
     text: 'There is a list of your purchases:',
     quick_replies: [{
@@ -148,88 +150,8 @@ controller.hears(['My purchases', 'my_purchases'], 'facebook_postback, message_r
   });
 });
 
-/** controller.hears(['call me (.*)', 'my name is (.*)'], 'message_received', (message) => {
-  const name = message.match[1];
-  controller.storage.users.get(message.user, (err, user) => {
-    if (!user) {
-      user = {
-        id: message.user,
-      };
-    }
-    user.name = name;
-    controller.storage.users.save(user, () => {
-      bot.reply(message, `Got it. I will call you ${user.name} from now on.`);
-    });
-  });
-});
-
-controller.hears(['what is my name', 'who am i'], 'message_received', (message) => {
-  controller.storage.users.get(message.user, (err, user) => {
-    if (user && user.name) {
-      bot.reply(message, `Your name is ${user.name}`);
-    } else {
-      bot.startConversation(message, (convo) => {
-        if (!err) {
-          convo.say('I do not know your name yet!');
-          convo.ask('What should I call you?', (response) => {
-            convo.ask(`You want me to call you ' ${response.text}'?`, [{
-              pattern: 'yes',
-              callback() {
-                // since no further messages are queued after this,
-                // the conversation will end naturally with status == 'completed'
-                convo.next();
-              },
-            },
-            {
-              pattern: 'no',
-              callback() {
-                // stop the conversation. this will cause it to end with status == 'stopped'
-                convo.stop();
-              },
-            },
-            {
-              default: true,
-              callback() {
-                convo.repeat();
-                convo.next();
-              },
-            },
-            ]);
-
-            convo.next();
-          }, {
-            key: 'nickname',
-          }); // store the results in a field called nickname
-
-          convo.on('end', () => {
-            if (convo.status === 'completed') {
-              bot.reply(message, 'OK! I will update my dossier...');
-
-              controller.storage.users.get(message.user, () => {
-                if (!user) {
-                  user = {
-                    id: message.user,
-                  };
-                }
-                user.name = convo.extractResponse('nickname');
-                controller.storage.users.save(user, () => {
-                  bot.reply(message, `Got it. I will call you ${user.name} from now on.`);
-                });
-              });
-            } else {
-              // this happens if the conversation ended prematurely for some reason
-              bot.reply(message, 'OK, nevermind!');
-            }
-          });
-        }
-      });
-    }
-  });
-});
-*/
-
 controller.hears(['uptime', 'identify yourself', 'who are you', 'what is your name'], 'message_received',
-  (message) => {
+  (bot, message) => {
     const hostname = os.hostname();
     const uptime = formatUptime(process.uptime());
 
@@ -237,7 +159,7 @@ controller.hears(['uptime', 'identify yourself', 'who are you', 'what is your na
       `:|] I am a bot. I have been running for ${uptime} on ${hostname}.`);
   });
 
-controller.on('message_received', (message) => {
-  bot.reply(message, 'Try: `what is my name` or `call me captain`');
+controller.on('message_received', (bot, message) => {
+  bot.reply(message, 'Try: `code` or `uptime`');
   return false;
 });
