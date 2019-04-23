@@ -1,30 +1,6 @@
 /* eslint-disable no-shadow */
 require('dotenv').config();
 
-const os = require('os');
-
-function formatUptime(time) {
-  let unit = 'second';
-  let uptime;
-
-  if (time > 60) {
-    uptime /= 60;
-    unit = 'minute';
-  }
-
-  if (uptime > 60) {
-    uptime /= 60;
-    unit = 'hour';
-  }
-
-  if (uptime !== 1) {
-    unit += 's';
-  }
-
-  uptime = `${uptime} ${unit}`;
-  return uptime;
-}
-
 if (!process.env.page_token) {
   console.log('Error: Specify page_token in environment');
   process.exit(1);
@@ -115,7 +91,7 @@ controller.on('facebook_postback', (bot, message) => {
   // console.log(bot, message);
   bot.reply(message, {
     text: 'Nice to see you here! Choose something below',
-    quick_replies: [{
+    buttons: [{
       content_type: 'text',
       title: 'My purchases',
       payload: 'my_purchases',
@@ -148,18 +124,4 @@ controller.hears(['My purchases', 'my_purchases'], 'facebook_postback, message_r
       payload: 'back',
     }],
   });
-});
-
-controller.hears(['uptime', 'identify yourself', 'who are you', 'what is your name'], 'message_received',
-  (bot, message) => {
-    const hostname = os.hostname();
-    const uptime = formatUptime(process.uptime());
-
-    bot.reply(message,
-      `:|] I am a bot. I have been running for ${uptime} on ${hostname}.`);
-  });
-
-controller.on('message_received', (bot, message) => {
-  bot.reply(message, 'Try: `code` or `uptime`');
-  return false;
 });
