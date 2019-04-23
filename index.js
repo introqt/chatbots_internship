@@ -53,7 +53,7 @@ const controller = Botkit.facebookbot({
 
 const bot = controller.spawn({});
 
-controller.setupWebserver(process.env.port || 3000, (err, webserver) => {
+controller.setupWebserver(process.env.port, (err, webserver) => {
   controller.createWebhookEndpoints(webserver, bot, () => {
     console.log('ONLINE!');
   });
