@@ -36,6 +36,7 @@ controller.setupWebserver(process.env.PORT || 5000, (err, webserver) => {
 });
 
 controller.api.nlp.enable();
+controller.api.messenger_profile.get_started();
 controller.api.messenger_profile.greeting('Greetings message!');
 controller.api.messenger_profile.menu([{
   locale: 'default',
