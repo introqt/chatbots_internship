@@ -92,7 +92,7 @@ controller.on('facebook_postback', (bot, message) => {
   // console.log(bot, message);
   bot.reply(message, {
     text: 'Nice to see you here! Choose something below',
-    buttons: [{
+    quick_replies: [{
       content_type: 'text',
       title: 'My purchases',
       payload: 'my_purchases',
