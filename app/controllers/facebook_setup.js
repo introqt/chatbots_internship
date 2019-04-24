@@ -1,7 +1,7 @@
 module.exports = (controller) => {
   controller.api.nlp.enable();
-  controller.api.messenger_profile.greeting('Greetings message!');
-  controller.api.messenger_profile.get_started('facebook_postback');
+  controller.api.messenger_profile.greeting('It`s a shop chatbot, press Get started.');
+  controller.api.messenger_profile.get_started('facebook_postback'); // ?
   controller.api.messenger_profile.menu([{
     locale: 'default',
     call_to_actions: [{
@@ -12,7 +12,7 @@ module.exports = (controller) => {
     {
       title: 'Goods catalog',
       type: 'postback',
-      payload: 'shop',
+      payload: 'Shop',
     }],
   }]);
 };

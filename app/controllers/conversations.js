@@ -18,24 +18,6 @@ module.exports = (controller) => {
     });
   });
 
-  // return quick replies
-  controller.hears(['quick'], 'message_received', (bot, message) => {
-    bot.reply(message, {
-      text: 'Menu',
-      quick_replies: [{
-        content_type: 'text',
-        title: 'Yes',
-        payload: 'yes',
-      },
-      {
-        content_type: 'text',
-        title: 'No',
-        payload: 'no',
-      },
-      ],
-    });
-  });
-
   controller.on('facebook_postback', (bot, message) => {
     // console.log(bot, message);
     bot.reply(message, {
@@ -43,34 +25,56 @@ module.exports = (controller) => {
       quick_replies: [{
         content_type: 'text',
         title: 'My purchases',
-        payload: 'my_purchases',
+        payload: 'My purchases',
       },
       {
         content_type: 'text',
         title: 'Shop',
-        payload: 'shop',
+        payload: 'Shop',
       },
       {
         content_type: 'text',
         title: 'Favorites',
-        payload: 'favorites',
+        payload: 'Favorites',
       },
       {
         content_type: 'text',
         title: 'Invite a friend',
-        payload: 'invite_a_friend',
+        payload: 'Invite a friend',
       },
       ],
     });
   });
 
-  controller.hears(['My purchases', 'my_purchases'], 'facebook_postback, message_received', (bot, message) => {
+  controller.hears(['My purchases', 'purchases'], 'facebook_postback, message_received', (bot, message) => {
     bot.reply(message, {
       text: 'There is a list of your purchases:',
       quick_replies: [{
         content_type: 'text',
         title: 'Back',
         payload: 'back',
+      }],
+    });
+  });
+
+  controller.hears('Shop', 'facebook_postback, message_received', (bot, message) => {
+    bot.reply(message, {
+      text: 'Welcome to the shop',
+      quick_replies: [{
+        content_type: 'text',
+        title: 'Back',
+        payload: 'facebook_postback',
+      }],
+    });
+  });
+
+  controller.hears(['invite', 'friend', 'Invite a friend'], 'facebook_postback, message_received', (bot, message) => {
+    bot.reply(message, {
+      text: 'Referral program',
+      quick_replies: [{
+        content_type: 'text',
+        title: 'Back',
+        payload: 'facebook_postback',
       }],
     });
   });
