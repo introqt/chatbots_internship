@@ -1,5 +1,5 @@
 module.exports = (controller) => {
-  controller.api.nlp.enable();
+  // controller.api.nlp.enable();
   controller.api.messenger_profile.greeting('It`s a shop chatbot, press Get started.');
   controller.api.messenger_profile.get_started('facebook_postback'); // ?
   controller.api.messenger_profile.menu([{

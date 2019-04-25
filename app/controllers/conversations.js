@@ -1,3 +1,6 @@
+const bby = require('../../helpers/bestbuy_api');
+const helper = require('../../helpers/templates');
+
 module.exports = (controller) => {
   // returns the bot's messenger code image
   controller.hears(['code'], 'message_received,facebook_postback', (bot, message) => {
@@ -18,7 +21,7 @@ module.exports = (controller) => {
     });
   });
 
-  controller.on('facebook_postback', (bot, message) => {
+  controller.on('facebook_postback,message_received', (bot, message) => {
     // console.log(bot, message);
     bot.reply(message, {
       text: 'Nice to see you here! Choose something below',
@@ -57,14 +60,30 @@ module.exports = (controller) => {
     });
   });
 
-  controller.hears('Shop', 'facebook_postback, message_received', (bot, message) => {
+  controller.hears(['Shop', 'shop'], 'facebook_postback, message_received', async (bot, message) => {
+    const movies = await bby.getMovies();
+
+    bot.startConversation(message, (err, convo) => {
+      if (!err) {
+        convo.say('There is a list of products you can buy:');
+        convo.ask({
+          attachment: {
+            type: 'template',
+            payload: {
+              template_type: 'generic',
+              elements: helper.createProductsGallery(movies.products),
+            },
+          },
+        }, () => {
+          convo.next();
+        });
+      }
+    });
+  });
+
+  controller.hears('info', 'facebook_postback', (bot, message) => {
     bot.reply(message, {
-      text: 'Welcome to the shop',
-      quick_replies: [{
-        content_type: 'text',
-        title: 'Back',
-        payload: 'facebook_postback',
-      }],
+      text: 'Info about this movie',
     });
   });
 
