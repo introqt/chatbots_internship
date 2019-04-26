@@ -10,17 +10,17 @@ function createProductsGallery(data) {
           {
             type: 'postback',
             title: 'Info',
-            payload: 'info',
+            payload: `info-${item.sku}`,
           },
           {
             type: 'postback',
             title: 'To favorites',
-            payload: 'favorite',
+            payload: `favorite-${item.sku}`,
           },
           {
             type: 'postback',
             title: 'Buy',
-            payload: 'buy',
+            payload: `buy-${item.sku}`,
           },
         ],
     };
@@ -30,6 +30,32 @@ function createProductsGallery(data) {
   return elements;
 }
 
+function buildMenu() {
+  return [
+    {
+      content_type: 'text',
+      title: 'My purchases',
+      payload: 'My purchases',
+    },
+    {
+      content_type: 'text',
+      title: 'Shop',
+      payload: 'Shop',
+    },
+    {
+      content_type: 'text',
+      title: 'Favorites',
+      payload: 'Favorites',
+    },
+    {
+      content_type: 'text',
+      title: 'Invite a friend',
+      payload: 'Invite a friend',
+    },
+  ];
+}
+
 module.exports = {
   createProductsGallery,
+  buildMenu,
 };

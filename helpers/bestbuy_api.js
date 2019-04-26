@@ -16,7 +16,7 @@ function getMovies() {
 }
 
 function getMovieBySku(sku) {
-  return bby.products(sku, { show: 'sku,name,salePrice,plot,image' });
+  return bby.products(`(search=${sku})`, { show: 'sku,name,salePrice,plot,image', pageSize: 1 });
 }
 
 module.exports = {

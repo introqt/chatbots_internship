@@ -25,31 +25,18 @@ module.exports = (controller) => {
     // console.log(bot, message);
     bot.reply(message, {
       text: 'Nice to see you here! Choose something below',
-      quick_replies: [{
-        content_type: 'text',
-        title: 'My purchases',
-        payload: 'My purchases',
-      },
-      {
-        content_type: 'text',
-        title: 'Shop',
-        payload: 'Shop',
-      },
-      {
-        content_type: 'text',
-        title: 'Favorites',
-        payload: 'Favorites',
-      },
-      {
-        content_type: 'text',
-        title: 'Invite a friend',
-        payload: 'Invite a friend',
-      },
-      ],
+      quick_replies: helper.buildMenu(),
     });
   });
 
-  controller.hears(['My purchases', 'purchases'], 'facebook_postback, message_received', (bot, message) => {
+  controller.hears('^back', 'facebook_postback', (bot, message) => {
+    bot.reply(message, {
+      text: 'Menu',
+      quick_replies: helper.buildMenu(),
+    });
+  });
+
+  controller.hears(['My purchases', '^purchases'], 'facebook_postback, message_received', (bot, message) => {
     bot.reply(message, {
       text: 'There is a list of your purchases:',
       quick_replies: [{
@@ -60,31 +47,68 @@ module.exports = (controller) => {
     });
   });
 
-  controller.hears(['Shop', 'shop'], 'facebook_postback, message_received', async (bot, message) => {
-    const movies = await bby.getMovies();
-
-    bot.startConversation(message, (err, convo) => {
-      if (!err) {
-        convo.say('There is a list of products you can buy:');
-        convo.ask({
+  controller.hears(['^shop'], 'facebook_postback, message_received', async (bot, message) => {
+    await bby.getMovies()
+      .then((data) => {
+        const answer = {
           attachment: {
             type: 'template',
             payload: {
               template_type: 'generic',
-              elements: helper.createProductsGallery(movies.products),
+              elements: helper.createProductsGallery(data.products),
             },
           },
-        }, () => {
-          convo.next();
-        });
-      }
-    });
+        };
+        bot.reply(message, answer);
+      })
+      .catch((err) => {
+        bot.reply(message, err);
+      });
   });
 
-  controller.hears('info', 'facebook_postback', (bot, message) => {
-    bot.reply(message, {
-      text: 'Info about this movie',
-    });
+  controller.hears('info-(.*)', 'facebook_postback', async (bot, message) => {
+    const sku = message.payload.split('-')[1];
+    await bby.getMovieBySku(sku)
+      .then((data) => {
+        bot.reply(message, {
+          text: `${data.products[0].name} for $${data.products[0].salePrice}`,
+        });
+      })
+      .catch((err) => {
+        bot.reply(message, {
+          text: `${err}`,
+        });
+      });
+  });
+
+  controller.hears('favorite-(.*)', 'facebook_postback', async (bot, message) => {
+    const sku = message.payload.split('-')[1];
+    await bby.getMovieBySku(sku)
+      .then((data) => {
+        bot.reply(message, {
+          text: `${data.products[0].name} was added to your favorite list`,
+        });
+      })
+      .catch((err) => {
+        bot.reply(message, {
+          text: `${err}`,
+        });
+      });
+  });
+
+  controller.hears('buy-(.*)', 'facebook_postback', async (bot, message) => {
+    const sku = message.payload.split('-')[1];
+    await bby.getMovieBySku(sku)
+      .then((data) => {
+        bot.reply(message, {
+          text: `You are buying this product:\n${data.products[0].name}\nfor $${data.products[0].salePrice}`,
+        });
+      })
+      .catch((err) => {
+        bot.reply(message, {
+          text: `${err}`,
+        });
+      });
   });
 
   controller.hears(['invite', 'friend', 'Invite a friend'], 'facebook_postback, message_received', (bot, message) => {
