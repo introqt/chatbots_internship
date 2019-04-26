@@ -1,35 +1,3 @@
-function createProductsGallery(data) {
-  const elements = [];
-  data.forEach((item) => {
-    const content = {
-      title: item.name,
-      image_url: item.image,
-      // subtitle: item.plot,
-      buttons:
-        [
-          {
-            type: 'postback',
-            title: 'Info',
-            payload: `info-${item.sku}`,
-          },
-          {
-            type: 'postback',
-            title: 'To favorites',
-            payload: `favorite-${item.sku}`,
-          },
-          {
-            type: 'postback',
-            title: 'Buy',
-            payload: `buy-${item.sku}`,
-          },
-        ],
-    };
-    elements.push(content);
-  });
-
-  return elements;
-}
-
 function buildMenu() {
   return [
     {
@@ -55,7 +23,60 @@ function buildMenu() {
   ];
 }
 
+function createProductsGallery(data) {
+  const elements = [];
+  data.forEach((item) => {
+    const content = {
+      title: item.name,
+      image_url: item.image,
+      subtitle: `$${item.salePrice}`,
+      buttons:
+        [
+          {
+            type: 'postback',
+            title: 'Info',
+            payload: `info-${item.sku}`,
+          },
+          {
+            type: 'postback',
+            title: 'To favorites',
+            payload: `favorite-${item.sku}`,
+          },
+          {
+            type: 'postback',
+            title: 'Buy',
+            payload: `buy-${item.sku}`,
+          },
+        ],
+    };
+    elements.push(content);
+  });
+
+  return elements;
+}
+
+function showProductInfo(data) {
+  return {
+    title: data.name,
+    image_url: data.image,
+    subtitle: data.plot,
+    buttons: [
+      {
+        type: 'postback',
+        title: 'Buy',
+        payload: `buy-${data.sku}`,
+      },
+      {
+        type: 'postback',
+        title: 'Main menu',
+        payload: 'main_menu',
+      },
+    ],
+  };
+}
+
 module.exports = {
   createProductsGallery,
   buildMenu,
+  showProductInfo,
 };

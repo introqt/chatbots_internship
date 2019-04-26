@@ -11,8 +11,8 @@ function getAllCategories() {
     });
 }
 
-function getMovies() {
-  return bby.products('type=Movie', { show: 'sku,name,salePrice,image' });
+function getMovies(page = 1) {
+  return bby.products('type=Movie', { show: 'sku,name,salePrice,image', page });
 }
 
 function getMovieBySku(sku) {

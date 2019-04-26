@@ -1,5 +1,6 @@
 const bby = require('../../helpers/bestbuy_api');
 const helper = require('../../helpers/templates');
+const mongoose = require('../../helpers/mongoose');
 
 module.exports = (controller) => {
   // returns the bot's messenger code image
@@ -50,6 +51,11 @@ module.exports = (controller) => {
   controller.hears(['^shop'], 'facebook_postback, message_received', async (bot, message) => {
     await bby.getMovies()
       .then((data) => {
+        bot.say({
+          text: 'There is a list of available products:',
+          channel: message.raw_message.sender.id,
+        });
+
         const answer = {
           attachment: {
             type: 'template',
@@ -59,6 +65,7 @@ module.exports = (controller) => {
             },
           },
         };
+
         bot.reply(message, answer);
       })
       .catch((err) => {
@@ -68,11 +75,20 @@ module.exports = (controller) => {
 
   controller.hears('info-(.*)', 'facebook_postback', async (bot, message) => {
     const sku = message.payload.split('-')[1];
+
     await bby.getMovieBySku(sku)
       .then((data) => {
-        bot.reply(message, {
-          text: `${data.products[0].name} for $${data.products[0].salePrice}`,
-        });
+        const answer = {
+          attachment: {
+            type: 'template',
+            payload: {
+              template_type: 'generic',
+              elements: [helper.showProductInfo(data.products[0])],
+            },
+          },
+        };
+
+        bot.reply(message, answer);
       })
       .catch((err) => {
         bot.reply(message, {
@@ -83,8 +99,12 @@ module.exports = (controller) => {
 
   controller.hears('favorite-(.*)', 'facebook_postback', async (bot, message) => {
     const sku = message.payload.split('-')[1];
+
     await bby.getMovieBySku(sku)
       .then((data) => {
+        const user = controller.storage.users.all();
+        console.log(user);
+
         bot.reply(message, {
           text: `${data.products[0].name} was added to your favorite list`,
         });
