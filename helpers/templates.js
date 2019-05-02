@@ -8,7 +8,7 @@ function buildMenu() {
     {
       content_type: 'text',
       title: 'Shop',
-      payload: 'Shop',
+      payload: 'shop',
     },
     {
       content_type: 'text',

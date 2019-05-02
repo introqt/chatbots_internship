@@ -1,10 +1,10 @@
 const bby = require('../../helpers/bestbuy_api');
 const helper = require('../../helpers/templates');
-const mongoose = require('../../helpers/mongoose');
+// const UserModel = require('../models/user');
 
 module.exports = (controller) => {
   // returns the bot's messenger code image
-  controller.hears(['code'], 'message_received,facebook_postback', (bot, message) => {
+  controller.hears(['code'], 'message_received', (bot, message) => {
     controller.api.messenger_profile.get_messenger_code(2000, (err, url) => {
       if (err) {
         // Error
@@ -22,14 +22,6 @@ module.exports = (controller) => {
     });
   });
 
-  controller.on('facebook_postback,message_received', (bot, message) => {
-    // console.log(bot, message);
-    bot.reply(message, {
-      text: 'Nice to see you here! Choose something below',
-      quick_replies: helper.buildMenu(),
-    });
-  });
-
   controller.hears('^back', 'facebook_postback', (bot, message) => {
     bot.reply(message, {
       text: 'Menu',
@@ -37,7 +29,7 @@ module.exports = (controller) => {
     });
   });
 
-  controller.hears(['My purchases', '^purchases'], 'facebook_postback, message_received', (bot, message) => {
+  controller.hears('My purchases', 'message_received', (bot, message) => {
     bot.reply(message, {
       text: 'There is a list of your purchases:',
       quick_replies: [{
@@ -48,14 +40,14 @@ module.exports = (controller) => {
     });
   });
 
-  controller.hears(['^shop'], 'facebook_postback, message_received', async (bot, message) => {
-    await bby.getMovies()
+  controller.hears('shop', 'message_received', async (bot, message) => {
+    const page = 1;
+    await bby.getMovies(page)
       .then((data) => {
         bot.say({
           text: 'There is a list of available products:',
           channel: message.raw_message.sender.id,
         });
-
         const answer = {
           attachment: {
             type: 'template',
@@ -64,8 +56,42 @@ module.exports = (controller) => {
               elements: helper.createProductsGallery(data.products),
             },
           },
+          quick_replies: [
+            {
+              content_type: 'text',
+              title: `Page ${page + 1}`,
+              payload: `Page ${page + 1}`,
+            },
+          ],
         };
+        bot.reply(message, answer);
+      })
+      .catch((err) => {
+        bot.reply(message, err);
+      });
+  });
 
+  controller.hears('Page (.*)', 'message_received', async (bot, message) => {
+    const page = +message.quick_reply.payload.split(' ')[1];
+
+    await bby.getMovies(page)
+      .then((data) => {
+        const answer = {
+          attachment: {
+            type: 'template',
+            payload: {
+              template_type: 'generic',
+              elements: helper.createProductsGallery(data.products),
+            },
+          },
+          quick_replies: [
+            {
+              content_type: 'text',
+              title: `Page ${page + 1}`,
+              payload: `Page ${page + 1}`,
+            },
+          ],
+        };
         bot.reply(message, answer);
       })
       .catch((err) => {
@@ -102,9 +128,6 @@ module.exports = (controller) => {
 
     await bby.getMovieBySku(sku)
       .then((data) => {
-        const user = controller.storage.users.all();
-        console.log(user);
-
         bot.reply(message, {
           text: `${data.products[0].name} was added to your favorite list`,
         });
@@ -139,6 +162,14 @@ module.exports = (controller) => {
         title: 'Back',
         payload: 'facebook_postback',
       }],
+    });
+  });
+
+  controller.on('facebook_postback,message_received', (bot, message) => {
+    console.log(message);
+    bot.reply(message, {
+      text: 'Nice to see you here! Choose something below',
+      quick_replies: helper.buildMenu(),
     });
   });
 };
