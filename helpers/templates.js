@@ -75,8 +75,41 @@ function showProductInfo(data) {
   };
 }
 
+function makeMultipleSkuStringFromArray(array) {
+  let string = '';
+  array.forEach((object) => {
+    string += `${object.sku},`;
+  });
+
+  return string.slice(0, -1);
+}
+
+function createFavoritesGallery(data) {
+  const elements = [];
+  data.forEach((item) => {
+    const content = {
+      title: item.name,
+      image_url: item.image,
+      subtitle: `$${item.salePrice}`,
+      buttons:
+        [
+          {
+            type: 'postback',
+            title: 'Buy',
+            payload: `buy-${item.sku}`,
+          },
+        ],
+    };
+    elements.push(content);
+  });
+
+  return elements;
+}
+
 module.exports = {
   createProductsGallery,
   buildMenu,
   showProductInfo,
+  makeMultipleSkuStringFromArray,
+  createFavoritesGallery,
 };

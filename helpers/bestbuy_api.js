@@ -19,8 +19,13 @@ function getMovieBySku(sku) {
   return bby.products(`(search=${sku})`, { show: 'sku,name,salePrice,plot,image', pageSize: 1 });
 }
 
+function getProductsBySkuList(skuList, page = 1) {
+  return bby.products(`sku in (${skuList})`, { show: 'sku,name,salePrice,image', pageSize: 10, page });
+}
+
 module.exports = {
   getAllCategories,
   getMovies,
   getMovieBySku,
+  getProductsBySkuList,
 };

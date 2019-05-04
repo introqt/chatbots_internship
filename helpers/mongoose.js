@@ -9,4 +9,4 @@ mongoose.connect(`${process.env.MONGO_URI}`, {
   dbName: 'test',
 }).catch(err => console.log('Mongo connection error', err));
 
-module.exports = { mongoose };
+module.exports = mongoose;

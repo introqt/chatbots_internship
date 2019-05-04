@@ -1,20 +1,36 @@
-const mongoose = require('mongoose');
+/* eslint-disable arrow-body-style */
+const findOrCreate = require('mongoose-find-or-create');
+const mongoose = require('../../helpers/mongoose');
 
-const userSchema = mongoose.Schema({
-  chatId: Number,
-  favorites: [
-    {
-      sku: Number,
-      name: String,
-    },
-  ],
-  history: [
-    {
-      sku: Number,
-      name: String,
-      date: Date,
-    },
-  ],
+const userSchema = new mongoose.Schema({
+  chatId: {
+    type: Number,
+    required: true,
+  },
+  name: {
+    firstName: String,
+    lastName: String,
+  },
+  phone: String,
+  location: {
+    lat: Number,
+    long: Number,
+  },
 });
 
-module.exports = mongoose.model('User', userSchema);
+userSchema.plugin(findOrCreate);
+
+const user = mongoose.model('User', userSchema);
+
+module.exports = user;
+
+module.exports.findOrCreateUser = (query) => {
+  return new Promise((resolve, reject) => {
+    user.findOrCreate(query, (err, result) => {
+      if (err) {
+        reject(err);
+      }
+      resolve(result);
+    });
+  });
+};
