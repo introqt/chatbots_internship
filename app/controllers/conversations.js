@@ -1,8 +1,11 @@
+/* eslint-disable no-shadow */
+/* eslint-disable no-undef */
 const { to } = require('await-to-js');
 const bby = require('../../helpers/bestbuy_api');
 const helper = require('../../helpers/templates');
 const user = require('../models/user');
 const favorites = require('../models/favorites');
+const history = require('../models/history');
 
 module.exports = (controller) => {
   // returns the bot's messenger code image
@@ -50,8 +53,8 @@ module.exports = (controller) => {
     if (favoritesList[0]) text = 'Your favorites list is empty!';
     console.log('Text', text);
 
-    const skus = helper.makeMultipleSkuStringFromArray(favoritesList[1]);
-    const products = await bby.getProductsBySkuList(skus);
+    const skuList = helper.makeMultipleSkuStringFromArray(favoritesList[1]);
+    const products = await bby.getProductsBySkuList(skuList);
 
     const attachment = {
       type: 'template',
@@ -176,50 +179,94 @@ module.exports = (controller) => {
 
     bot.reply(message, {
       text,
+      quick_replies: [
+        {
+          content_type: 'text',
+          payload: 'back',
+          title: 'Back',
+        },
+      ],
     });
   });
 
   controller.hears('buy-(.*)', 'facebook_postback', async (bot, message) => {
     const sku = message.payload.split('-')[1];
-    await bby.getMovieBySku(sku)
-      .then((data) => {
-        bot.reply(message, {
-          text: `You are buying this product:\n${data.products[0].name}\nfor $${data.products[0].salePrice}.\nPlease, give us your phone number`,
-          quick_replies: [
-            {
-              content_type: 'user_phone_number',
-              title: 'Provide phone number',
-            },
-          ],
-        });
-      })
-      .catch((err) => {
-        bot.reply(message, {
-          text: `${err}`,
-        });
-      });
-  });
-
-  // eslint-disable-next-line no-useless-escape
-  controller.hears('(^\\+380\\d{9}$)', 'message_received', async (bot, message) => {
     const chatId = message.user;
-    const client = await user.findOrCreateUser({ chatId });
 
-    [client.phone] = [message.match.input];
-    client.save();
+    // await bby.getMovieBySku(sku)
+    //   .then((data) => {
+    //     bot.reply(message, {
+    //       text: `You are buying this product:\n${data.products[0].name}\nfor $${data.products[0].salePrice}.\nPlease, give us your phone number`,
+    //       quick_replies: [
+    //         {
+    //           content_type: 'user_phone_number',
+    //           title: 'Provide phone number',
+    //         },
+    //       ],
+    //     });
+    //   })
+    //   .catch((err) => {
+    //     bot.reply(message, {
+    //       text: `${err}`,
+    //     });
+    //   });
 
-    bot.reply(message, {
-      text: 'You entered your mobile phone. Provide your location now.',
-      quick_replies: [
-        {
-          content_type: 'location',
-          title: 'Provide your location',
-          payload: 'location',
-        },
-      ],
+    bot.startConversation(message, (err, convo) => {
+      if (!err) {
+        convo.say('Nice choice! I need some information about you though.');
+        convo.ask({
+          text: 'What is your phone number?',
+          quick_replies: [{
+            content_type: 'user_phone_number',
+            payload: 'phone_nubmer',
+          }],
+        }, async (response) => {
+          // eslint-disable-next-line prefer-const
+          [err, client] = await to(user.findOrCreateUser({ chatId }));
+          if (err) {
+            console.log(err);
+          }
+          console.log(client);
+          client.phone = response.message.quick_reply.payload;
+          client.save();
+
+          convo.say('Thank you! I also need your location to deliver your order.');
+          convo.ask({
+            text: 'Please, share your location with a button below',
+            quick_replies: [{
+              content_type: 'location',
+              payload: 'location',
+              title: 'location',
+            }],
+          }, async (response) => {
+            // saving user's location
+            client.location = response.message.attachments[0].payload.coordinates;
+            client.save();
+
+            // saving user's purchase
+            await to(history.createHistory({ sku }));
+            convo.next();
+          });
+          convo.next();
+        });
+
+        convo.on('end', () => {
+          if (convo.status === 'completed') {
+            bot.reply(message, {
+              text: 'Thank you for your order! Our courier will contact you within 2 hours!',
+              quick_replies: [{
+                content_type: 'text',
+                title: 'Main menu',
+                payload: 'back',
+              }],
+            });
+          } else {
+            // this happens if the conversation ended prematurely for some reason
+            bot.reply(message, 'OK, nevermind!');
+          }
+        });
+      }
     });
-
-    console.log(message);
   });
 
   controller.hears(['invite', 'friend', 'Invite a friend'], 'facebook_postback, message_received', (bot, message) => {
@@ -242,18 +289,6 @@ module.exports = (controller) => {
     [err, client] = await to(user.findOrCreateUser({ chatId }));
     if (err) {
       console.log(err);
-    }
-
-    if (message.attachments && message.attachments[0].type === 'location') {
-      console.log(message.attachments[0].payload);
-      client.location = message.attachments[0].payload.coordinates;
-      client.save();
-
-      console.log(user);
-
-      bot.reply(message, {
-        text: 'Thank you! Our courier will contact you within 2 hours.',
-      });
     }
 
     if (client) {
