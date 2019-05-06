@@ -184,7 +184,13 @@ module.exports = (controller) => {
     await bby.getMovieBySku(sku)
       .then((data) => {
         bot.reply(message, {
-          text: `You are buying this product:\n${data.products[0].name}\nfor $${data.products[0].salePrice}`,
+          text: `You are buying this product:\n${data.products[0].name}\nfor $${data.products[0].salePrice}.\nPlease, give us your phone number`,
+          quick_replies: [
+            {
+              content_type: 'user_phone_number',
+              title: 'Provide phone number',
+            },
+          ],
         });
       })
       .catch((err) => {
@@ -192,6 +198,19 @@ module.exports = (controller) => {
           text: `${err}`,
         });
       });
+  });
+
+  // eslint-disable-next-line no-useless-escape
+  controller.hears('(^\\+380\\d{9}$)', 'message_received', async (bot, message) => {
+    const chatId = message.user;
+    const client = await user.findOrCreateUser({ chatId });
+
+    [client.phone] = [message.match];
+    client.save();
+
+    bot.reply(message, {
+      text: 'You entered your mobile phone',
+    });
   });
 
   controller.hears(['invite', 'friend', 'Invite a friend'], 'facebook_postback, message_received', (bot, message) => {
@@ -216,9 +235,11 @@ module.exports = (controller) => {
       console.log(err);
     }
 
-    bot.reply(message, {
-      text: 'Nice to see you here! Choose something below',
-      quick_replies: helper.buildMenu(),
-    });
+    if (client) {
+      bot.reply(message, {
+        text: 'Nice to see you here! Choose something below',
+        quick_replies: helper.buildMenu(),
+      });
+    }
   });
 };
