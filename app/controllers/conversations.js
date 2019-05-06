@@ -205,12 +205,21 @@ module.exports = (controller) => {
     const chatId = message.user;
     const client = await user.findOrCreateUser({ chatId });
 
-    [client.phone] = [message.match];
+    [client.phone] = [message.match.input];
     client.save();
 
     bot.reply(message, {
-      text: 'You entered your mobile phone',
+      text: 'You entered your mobile phone. Provide your location now.',
+      quick_replies: [
+        {
+          content_type: 'location',
+          title: 'Provide your location',
+          payload: 'location',
+        },
+      ],
     });
+
+    console.log(message);
   });
 
   controller.hears(['invite', 'friend', 'Invite a friend'], 'facebook_postback, message_received', (bot, message) => {
@@ -233,6 +242,18 @@ module.exports = (controller) => {
     [err, client] = await to(user.findOrCreateUser({ chatId }));
     if (err) {
       console.log(err);
+    }
+
+    if (message.attachments && message.attachments[0].type === 'location') {
+      console.log(message.attachments[0].payload);
+      client.location = message.attachments[0].payload.coordinates;
+      client.save();
+
+      console.log(user);
+
+      bot.reply(message, {
+        text: 'Thank you! Our courier will contact you within 2 hours.',
+      });
     }
 
     if (client) {
