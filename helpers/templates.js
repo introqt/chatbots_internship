@@ -1,3 +1,5 @@
+const moment = require('moment');
+
 function buildMenu() {
   return [
     {
@@ -84,6 +86,27 @@ function makeMultipleSkuStringFromArray(array) {
   return string.slice(0, -1);
 }
 
+function createHistoryGallery(data) {
+  const elements = [];
+  data.forEach((item) => {
+    const content = {
+      title: item.name,
+      image_url: item.image,
+      subtitle: `Purchased at ${moment(item.date).format('DD-MM-YYYY')}`,
+      buttons: [
+        {
+          type: 'postback',
+          title: 'Repeat',
+          payload: `buy-${item.sku}`,
+        },
+      ],
+    };
+    elements.push(content);
+  });
+
+  return elements;
+}
+
 function createFavoritesGallery(data) {
   const elements = [];
   data.forEach((item) => {
@@ -112,4 +135,5 @@ module.exports = {
   showProductInfo,
   makeMultipleSkuStringFromArray,
   createFavoritesGallery,
+  createHistoryGallery,
 };

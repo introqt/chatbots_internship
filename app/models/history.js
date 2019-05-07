@@ -1,12 +1,19 @@
 /* eslint-disable arrow-body-style */
+const mongoosePaginate = require('mongoose-paginate');
 const mongoose = require('../../helpers/mongoose');
 
 const historySchema = new mongoose.Schema({
-  chatId: Number,
+  chatId: {
+    type: Number,
+    required: true,
+  },
   sku: {
     type: Number,
-    unique: true,
+    required: true,
   },
+  name: String,
+  image: String,
+  price: Number,
   date: {
     type: Date,
     default: Date.now,
@@ -16,6 +23,8 @@ const historySchema = new mongoose.Schema({
     long: Number,
   },
 });
+
+historySchema.plugin(mongoosePaginate);
 
 const history = mongoose.model('History', historySchema);
 
@@ -35,6 +44,17 @@ module.exports.createHistory = (query) => {
 module.exports.saveHistory = (query) => {
   return new Promise((resolve, reject) => {
     history.save(query, (err, result) => {
+      if (err) {
+        reject(err);
+      }
+      resolve(result);
+    });
+  });
+};
+
+module.exports.findHistory = (query) => {
+  return new Promise((resolve, reject) => {
+    history.find(query, (err, result) => {
       if (err) {
         reject(err);
       }

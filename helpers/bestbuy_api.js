@@ -15,7 +15,7 @@ function getMovies(page = 1) {
   return bby.products('type=Movie', { show: 'sku,name,salePrice,image', page });
 }
 
-function getMovieBySku(sku) {
+function getProductBySku(sku) {
   return bby.products(`(search=${sku})`, { show: 'sku,name,salePrice,plot,image', pageSize: 1 });
 }
 
@@ -26,6 +26,6 @@ function getProductsBySkuList(skuList, page = 1) {
 module.exports = {
   getAllCategories,
   getMovies,
-  getMovieBySku,
+  getProductBySku,
   getProductsBySkuList,
 };

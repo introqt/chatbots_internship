@@ -10,9 +10,9 @@ module.exports = (controller) => {
       payload: 'main_menu',
     },
     {
-      title: 'Goods catalog',
+      title: 'Shop',
       type: 'postback',
-      payload: 'Shop',
+      payload: 'shop',
     }],
   }]);
 };

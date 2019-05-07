@@ -34,27 +34,155 @@ module.exports = (controller) => {
     });
   });
 
-  controller.hears('My purchases', 'message_received', (bot, message) => {
-    bot.reply(message, {
-      text: 'There is a list of your purchases:',
-      quick_replies: [{
+  controller.hears('My purchases', 'message_received', async (bot, message) => {
+    const chatId = message.user;
+    let answer;
+    let error;
+    let historyPaginated;
+    let nextPageButton;
+    let page;
+
+    // eslint-disable-next-line prefer-const
+    [error, historyPaginated] = await to(history.history.paginate({ chatId }));
+    if (error) console.log(error);
+
+    if (historyPaginated.pages > 1) {
+      page = 1;
+      nextPageButton = {
         content_type: 'text',
-        title: 'Back',
-        payload: 'back',
-      }],
-    });
+        title: `Purchases page ${page + 1}`,
+        payload: `Purchases page ${page + 1}`,
+      };
+    }
+
+    if (historyPaginated.docs.length === 0) {
+      answer = {
+        text: 'Your purchases will be listed here. Use shop button to buy something.',
+        quick_replies: [
+          {
+            content_type: 'text',
+            title: 'Shop',
+            payload: 'shop',
+          },
+          {
+            content_type: 'text',
+            title: 'Back',
+            payload: 'back',
+          },
+        ],
+      };
+    } else if (nextPageButton) {
+      answer = {
+        attachment: {
+          type: 'template',
+          payload: {
+            template_type: 'generic',
+            elements: helper.createHistoryGallery(historyPaginated.docs),
+          },
+        },
+        quick_replies: [
+          nextPageButton,
+          {
+            content_type: 'text',
+            title: 'Back',
+            payload: 'back',
+          },
+        ],
+      };
+    } else {
+      answer = {
+        attachment: {
+          type: 'template',
+          payload: {
+            template_type: 'generic',
+            elements: helper.createHistoryGallery(historyPaginated.docs),
+          },
+        },
+        quick_replies: [
+          {
+            content_type: 'text',
+            title: 'Back',
+            payload: 'back',
+          },
+        ],
+      };
+    }
+
+    bot.reply(message, answer);
+  });
+
+  controller.hears('Purchases page (.*)', 'message_received', async (bot, message) => {
+    const chatId = message.user;
+    let page = +message.quick_reply.payload.split(' ')[2];
+    let nextPageButton;
+    let error;
+    let historyPaginated;
+    let answer;
+
+    // eslint-disable-next-line prefer-const
+    [error, historyPaginated] = await to(history.history.paginate({ chatId }, { page }));
+    if (error) console.log(error);
+
+    // do we need button for next pages?
+    if (historyPaginated.pages > page) {
+      page += 1;
+      nextPageButton = {
+        content_type: 'text',
+        title: `Purchases page ${page + 1}`,
+        payload: `Purchases page ${page + 1}`,
+      };
+    }
+
+    if (nextPageButton) {
+      answer = {
+        attachment: {
+          type: 'template',
+          payload: {
+            template_type: 'generic',
+            elements: helper.createHistoryGallery(historyPaginated.docs),
+          },
+        },
+        quick_replies: [
+          nextPageButton,
+          {
+            content_type: 'text',
+            title: 'Back',
+            payload: 'back',
+          },
+        ],
+      };
+    } else {
+      answer = {
+        attachment: {
+          type: 'template',
+          payload: {
+            template_type: 'generic',
+            elements: helper.createHistoryGallery(historyPaginated.docs),
+          },
+        },
+        quick_replies: [
+          {
+            content_type: 'text',
+            title: 'Back',
+            payload: 'back',
+          },
+        ],
+      };
+    }
+
+    bot.reply(message, answer);
   });
 
   controller.hears('Favorites', 'message_received', async (bot, message) => {
-    let text = '';
     const chatId = message.user;
 
     const favoritesList = await to(favorites.findFavorites({ chatId }));
-    if (favoritesList[0]) text = 'Your favorites list is empty!';
-    console.log('Text', text);
+    if (favoritesList[0]) bot.reply(message, 'Your favorites list is empty');
 
     const skuList = helper.makeMultipleSkuStringFromArray(favoritesList[1]);
-    const products = await bby.getProductsBySkuList(skuList);
+    const products = await bby.getProductsBySkuList(skuList, 2);
+
+    console.log(products);
 
     const attachment = {
       type: 'template',
@@ -75,7 +203,7 @@ module.exports = (controller) => {
     });
   });
 
-  controller.hears('shop', 'message_received', async (bot, message) => {
+  controller.hears('^shop', 'facebook_postback,message_received', async (bot, message) => {
     const page = 1;
     await bby.getMovies(page)
       .then((data) => {
@@ -137,7 +265,7 @@ module.exports = (controller) => {
   controller.hears('info-(.*)', 'facebook_postback', async (bot, message) => {
     const sku = message.payload.split('-')[1];
 
-    await bby.getMovieBySku(sku)
+    await bby.getProductBySku(sku)
       .then((data) => {
         const answer = {
           attachment: {
@@ -193,24 +321,6 @@ module.exports = (controller) => {
     const sku = message.payload.split('-')[1];
     const chatId = message.user;
 
-    // await bby.getMovieBySku(sku)
-    //   .then((data) => {
-    //     bot.reply(message, {
-    //       text: `You are buying this product:\n${data.products[0].name}\nfor $${data.products[0].salePrice}.\nPlease, give us your phone number`,
-    //       quick_replies: [
-    //         {
-    //           content_type: 'user_phone_number',
-    //           title: 'Provide phone number',
-    //         },
-    //       ],
-    //     });
-    //   })
-    //   .catch((err) => {
-    //     bot.reply(message, {
-    //       text: `${err}`,
-    //     });
-    //   });
-
     bot.startConversation(message, (err, convo) => {
       if (!err) {
         convo.say('Nice choice! I need some information about you though.');
@@ -222,9 +332,9 @@ module.exports = (controller) => {
           }],
         }, async (response) => {
           // eslint-disable-next-line prefer-const
-          [err, client] = await to(user.findOrCreateUser({ chatId }));
-          if (err) {
-            console.log(err);
+          [error, client] = await to(user.findOrCreateUser({ chatId }));
+          if (error) {
+            console.log(error);
           }
           client.phone = response.message.quick_reply.payload;
           client.save();
@@ -238,11 +348,18 @@ module.exports = (controller) => {
               title: 'location',
             }],
           }, async (response) => {
-            // saving user's location
+            // saving delivery location
             const location = response.message.attachments[0].payload.coordinates;
 
-            // saving user's purchase
-            await to(history.createHistory({ sku, location }));
+            // getting product info
+            const productInfo = await to(bby.getProductBySku(sku));
+            if (productInfo[0]) console.log(productInfo[0]);
+
+            const { name, salePrice, image } = productInfo[1].products[0];
+            // saving new purchase to the history
+            await to(history.createHistory({
+              chatId, sku, name, image, salePrice, location,
+            }));
             convo.next();
           });
           convo.next();
@@ -283,6 +400,7 @@ module.exports = (controller) => {
     let err;
     let client;
 
+    // saving chat id of current user
     // eslint-disable-next-line prefer-const
     [err, client] = await to(user.findOrCreateUser({ chatId }));
     if (err) {
