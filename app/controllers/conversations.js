@@ -226,7 +226,6 @@ module.exports = (controller) => {
           if (err) {
             console.log(err);
           }
-          console.log(client);
           client.phone = response.message.quick_reply.payload;
           client.save();
 
@@ -240,11 +239,10 @@ module.exports = (controller) => {
             }],
           }, async (response) => {
             // saving user's location
-            client.location = response.message.attachments[0].payload.coordinates;
-            client.save();
+            const location = response.message.attachments[0].payload.coordinates;
 
             // saving user's purchase
-            await to(history.createHistory({ sku }));
+            await to(history.createHistory({ sku, location }));
             convo.next();
           });
           convo.next();

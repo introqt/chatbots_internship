@@ -12,10 +12,6 @@ const userSchema = new mongoose.Schema({
     lastName: String,
   },
   phone: String,
-  location: {
-    lat: Number,
-    long: Number,
-  },
 });
 
 userSchema.plugin(findOrCreate);
