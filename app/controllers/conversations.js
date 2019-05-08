@@ -28,13 +28,6 @@ module.exports = (controller) => {
     });
   });
 
-  // controller.hears('^back', 'facebook_postback', (bot, message) => {
-  //   bot.reply(message, {
-  //     text: 'Menu',
-  //     quick_replies: helper.buildMenu(),
-  //   });
-  // });
-
   controller.hears('My purchases', 'message_received', async (bot, message) => {
     const chatId = message.user;
     let answer;
