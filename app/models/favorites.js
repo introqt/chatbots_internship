@@ -1,5 +1,6 @@
 /* eslint-disable arrow-body-style */
 const findOrCreate = require('mongoose-find-or-create');
+const mongoosePaginate = require('mongoose-paginate');
 const mongoose = require('../../helpers/mongoose');
 
 const favoritesSchema = new mongoose.Schema({
@@ -8,6 +9,9 @@ const favoritesSchema = new mongoose.Schema({
     type: Number,
     unique: true,
   },
+  name: String,
+  image: String,
+  price: Number,
   date: {
     type: Date,
     default: Date.now,
@@ -15,6 +19,7 @@ const favoritesSchema = new mongoose.Schema({
 });
 
 favoritesSchema.plugin(findOrCreate);
+favoritesSchema.plugin(mongoosePaginate);
 
 const favorites = mongoose.model('Favorites', favoritesSchema);
 

@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 /* eslint-disable no-shadow */
 /* eslint-disable no-undef */
 const { to } = require('await-to-js');
@@ -12,7 +13,7 @@ module.exports = (controller) => {
   controller.hears(['code'], 'message_received', (bot, message) => {
     controller.api.messenger_profile.get_messenger_code(2000, (err, url) => {
       if (err) {
-        // Error
+        console.log(err);
       } else {
         const image = {
           attachment: {
@@ -37,13 +38,10 @@ module.exports = (controller) => {
   controller.hears('My purchases', 'message_received', async (bot, message) => {
     const chatId = message.user;
     let answer;
-    let error;
-    let historyPaginated;
     let nextPageButton;
     let page;
 
-    // eslint-disable-next-line prefer-const
-    [error, historyPaginated] = await to(history.history.paginate({ chatId }));
+    const [error, historyPaginated] = await to(history.paginate({ chatId }));
     if (error) console.log(error);
 
     if (historyPaginated.pages > 1) {
@@ -115,12 +113,9 @@ module.exports = (controller) => {
     const chatId = message.user;
     let page = +message.quick_reply.payload.split(' ')[2];
     let nextPageButton;
-    let error;
-    let historyPaginated;
     let answer;
 
-    // eslint-disable-next-line prefer-const
-    [error, historyPaginated] = await to(history.history.paginate({ chatId }, { page }));
+    const [error, historyPaginated] = await to(history.paginate({ chatId }, { page }));
     if (error) console.log(error);
 
     // do we need button for next pages?
@@ -173,33 +168,178 @@ module.exports = (controller) => {
     bot.reply(message, answer);
   });
 
-  controller.hears('Favorites', 'message_received', async (bot, message) => {
+  controller.hears('My favorites', 'message_received', async (bot, message) => {
     const chatId = message.user;
+    let answer;
+    let nextPageButton;
+    let page;
 
-    const favoritesList = await to(favorites.findFavorites({ chatId }));
-    if (favoritesList[0]) bot.reply(message, 'Your favorites list is empty');
+    const [error, favoritesPaginated] = await to(favorites.paginate({
+      chatId,
+    }));
+    if (error) console.log(error);
 
-    const skuList = helper.makeMultipleSkuStringFromArray(favoritesList[1]);
-    const products = await bby.getProductsBySkuList(skuList, 2);
+    if (favoritesPaginated.pages > 1) {
+      page = 1;
+      nextPageButton = {
+        content_type: 'text',
+        title: `Favorites page ${page + 1}`,
+        payload: `Favorites page ${page + 1}`,
+      };
+    }
 
-    console.log(products);
+    if (favoritesPaginated.docs.length === 0) {
+      answer = {
+        text: 'Your favorites will be listed here. Use shop button to add something to this list.',
+        quick_replies: [
+          {
+            content_type: 'text',
+            title: 'Shop',
+            payload: 'shop',
+          },
+          {
+            content_type: 'text',
+            title: 'Back',
+            payload: 'back',
+          },
+        ],
+      };
+    } else if (nextPageButton) {
+      answer = {
+        attachment: {
+          type: 'template',
+          payload: {
+            template_type: 'generic',
+            elements: helper.createFavoritesGallery(favoritesPaginated.docs),
+          },
+        },
+        quick_replies: [
+          nextPageButton,
+          {
+            content_type: 'text',
+            title: 'Back',
+            payload: 'back',
+          },
+        ],
+      };
+    } else {
+      answer = {
+        attachment: {
+          type: 'template',
+          payload: {
+            template_type: 'generic',
+            elements: helper.createFavoritesGallery(favoritesPaginated.docs),
+          },
+        },
+        quick_replies: [
+          {
+            content_type: 'text',
+            title: 'Back',
+            payload: 'back',
+          },
+        ],
+      };
+    }
 
-    const attachment = {
-      type: 'template',
-      payload: {
-        template_type: 'generic',
-        elements: helper.createFavoritesGallery(products.products),
-      },
-    };
+    bot.reply(message, answer);
+  });
+
+  controller.hears('Favorites page (.*)', 'message_received', async (bot, message) => {
+    const chatId = message.user;
+    let page = +message.quick_reply.payload.split(' ')[2];
+    let nextPageButton;
+    let answer;
+
+    const [error, favoritesPaginated] = await to(favorites.paginate({ chatId }, { page }));
+    if (error) console.log(error);
+
+    // do we need button for next pages?
+    if (favoritesPaginated.pages > page) {
+      page += 1;
+      nextPageButton = {
+        content_type: 'text',
+        title: `Favorites page ${page + 1}`,
+        payload: `Favorites page ${page + 1}`,
+      };
+    }
+
+    if (nextPageButton) {
+      answer = {
+        attachment: {
+          type: 'template',
+          payload: {
+            template_type: 'generic',
+            elements: helper.createFavoritesGallery(favoritesPaginated.docs),
+          },
+        },
+        quick_replies: [
+          nextPageButton,
+          {
+            content_type: 'text',
+            title: 'Back',
+            payload: 'back',
+          },
+        ],
+      };
+    } else {
+      answer = {
+        attachment: {
+          type: 'template',
+          payload: {
+            template_type: 'generic',
+            elements: helper.createFavoritesGallery(favoritesPaginated.docs),
+          },
+        },
+        quick_replies: [
+          {
+            content_type: 'text',
+            title: 'Back',
+            payload: 'back',
+          },
+        ],
+      };
+    }
+
+    bot.reply(message, answer);
+  });
+
+  controller.hears('favorite-(.*)', 'facebook_postback', async (bot, message) => {
+    const chatId = message.user;
+    const sku = message.payload.split('-')[1];
+    let text = '';
+
+    const [err, favorite] = await to(favorites.findFavorites({ chatId, sku }));
+    if (err) console.log('Error:', err);
+
+    if (favorite[0]) {
+      text = 'This product is already in your Favorites';
+    } else {
+      const [err, product] = await to(bby.getProductBySku(sku));
+      if (err) console.log(err);
+
+      if (product.products) {
+        const { name, image, salePrice } = product.products[0];
+
+        const [err, favorite] = await to(favorites.saveFavorites({
+          chatId, sku, name, image, salePrice,
+        }));
+        if (err) console.log(err);
+
+        text = 'This product was successfully added to your favorites!';
+      } else {
+        text = 'Oops! Something went wrong!';
+      }
+    }
 
     bot.reply(message, {
       text,
-      attachment,
-      quick_replies: [{
-        content_type: 'text',
-        title: 'Back',
-        payload: 'back',
-      }],
+      quick_replies: [
+        {
+          content_type: 'text',
+          payload: 'back',
+          title: 'Back',
+        },
+      ],
     });
   });
 
@@ -286,37 +426,6 @@ module.exports = (controller) => {
       });
   });
 
-  controller.hears('favorite-(.*)', 'facebook_postback', async (bot, message) => {
-    const sku = message.payload.split('-')[1];
-    const chatId = message.user;
-    let text = '';
-    let err;
-    let favorite;
-
-    // eslint-disable-next-line prefer-const
-    [err, favorite] = await to(favorites.findFavorites({ chatId, sku }));
-    if (err) console.log('Error:', err);
-
-    if (favorite[0]) {
-      text = 'This product is already in your Favorites';
-    } else {
-      await to(favorites.saveFavorites({ chatId, sku }));
-      // next error-handle?
-      text = 'This product was added to your favorite list';
-    }
-
-    bot.reply(message, {
-      text,
-      quick_replies: [
-        {
-          content_type: 'text',
-          payload: 'back',
-          title: 'Back',
-        },
-      ],
-    });
-  });
-
   controller.hears('buy-(.*)', 'facebook_postback', async (bot, message) => {
     const sku = message.payload.split('-')[1];
     const chatId = message.user;
@@ -331,8 +440,7 @@ module.exports = (controller) => {
             payload: 'phone_nubmer',
           }],
         }, async (response) => {
-          // eslint-disable-next-line prefer-const
-          [error, client] = await to(user.findOrCreateUser({ chatId }));
+          const [error, client] = await to(user.findOrCreateUser({ chatId }));
           if (error) {
             console.log(error);
           }
@@ -397,11 +505,8 @@ module.exports = (controller) => {
 
   controller.on('facebook_postback,message_received', async (bot, message) => {
     const chatId = message.user;
-    let err;
-    let client;
 
     // saving chat id of current user
-    // eslint-disable-next-line prefer-const
     [err, client] = await to(user.findOrCreateUser({ chatId }));
     if (err) {
       console.log(err);

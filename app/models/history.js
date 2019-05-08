@@ -28,7 +28,7 @@ historySchema.plugin(mongoosePaginate);
 
 const history = mongoose.model('History', historySchema);
 
-module.exports.history = history;
+module.exports = history;
 
 module.exports.createHistory = (query) => {
   return new Promise((resolve, reject) => {

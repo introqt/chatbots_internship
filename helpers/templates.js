@@ -14,8 +14,8 @@ function buildMenu() {
     },
     {
       content_type: 'text',
-      title: 'Favorites',
-      payload: 'Favorites',
+      title: 'My favorites',
+      payload: 'My favorites',
     },
     {
       content_type: 'text',
@@ -113,7 +113,6 @@ function createFavoritesGallery(data) {
     const content = {
       title: item.name,
       image_url: item.image,
-      subtitle: `$${item.salePrice}`,
       buttons:
         [
           {
