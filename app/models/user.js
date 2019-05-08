@@ -7,11 +7,19 @@ const userSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
-  name: {
-    firstName: String,
-    lastName: String,
-  },
+  fullName: String,
   phone: String,
+  referrals: [{
+    chatId: Number,
+    dateActivated: {
+      type: Date,
+      default: Date.now,
+    },
+  }],
+  gifts: {
+    type: Number,
+    default: 0,
+  },
 });
 
 userSchema.plugin(findOrCreate);
@@ -23,6 +31,17 @@ module.exports = user;
 module.exports.findOrCreateUser = (query) => {
   return new Promise((resolve, reject) => {
     user.findOrCreate(query, (err, result) => {
+      if (err) {
+        reject(err);
+      }
+      resolve(result);
+    });
+  });
+};
+
+module.exports.findUser = (query) => {
+  return new Promise((resolve, reject) => {
+    user.findOne(query, (err, result) => {
       if (err) {
         reject(err);
       }

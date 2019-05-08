@@ -486,8 +486,11 @@ module.exports = (controller) => {
   });
 
   controller.hears(['invite', 'friend', 'Invite a friend'], 'facebook_postback, message_received', (bot, message) => {
+    const chatId = message.user;
+    const link = encodeURI(`https://m.me/${process.env.FACEBOOK_PAGE_ID}?ref=${chatId}`);
+
     bot.reply(message, {
-      text: 'Referral program',
+      text: `Your link for friends: ${link}.\nSend it to 3 friends to get a gift.`,
       quick_replies: [{
         content_type: 'text',
         title: 'Back',
@@ -497,19 +500,62 @@ module.exports = (controller) => {
   });
 
   controller.on('facebook_postback,message_received', async (bot, message) => {
-    const chatId = message.user;
+    // referral check
+    if (message.postback && message.postback.referral) {
+      const refUser = message.postback.referral.ref;
+      const newUser = { chatId: message.user };
 
-    // saving chat id of current user
-    [err, client] = await to(user.findOrCreateUser({ chatId }));
-    if (err) {
-      console.log(err);
+      // search for a user that created ref link
+      const [err, client] = await to(user.findUser({ chatId: refUser }));
+      if (err) console.log(err);
+
+      // no duplicates in referrals array
+      let duplicates = false;
+      client.referrals.forEach((referral) => {
+        // eslint-disable-next-line eqeqeq
+        if (referral.chatId == newUser.chatId) {
+          console.log('Referral is already in db!');
+          duplicates = true;
+          return false;
+        }
+        return true;
+      });
+
+      // if no duplicates - push a new ref to user
+      if (duplicates === false) {
+        client.referrals.push(newUser);
+        client.save();
+        let text = 'Your link has been activated!';
+
+        // count if a user has 3 active referalls
+        if (client.referrals.length % 3 === 0) {
+          // giving a gift to a user-referrer
+          client.gifts += 1;
+          client.save();
+          text = 'Gratz! 3 friends of yours have been activated your link!\nYou have a free purchase now!';
+        }
+
+        bot.say({ channel: refUser, text });
+      }
     }
 
-    if (client) {
-      bot.reply(message, {
-        text: 'Nice to see you here! Choose something below',
-        quick_replies: helper.buildMenu(),
-      });
+    // getting new user info
+    const [err, newUser] = await to(bot.getMessageUser(message));
+    if (err) console.log(err);
+
+    if (newUser) {
+      const chatId = newUser.id;
+      const fullName = newUser.full_name;
+
+      const [err, client] = await to(user.findOrCreateUser({ chatId, fullName }));
+      if (err) console.log(err);
+
+      if (client) {
+        bot.reply(message, {
+          text: `Nice to see you here, ${client.fullName}!\nChoose something below`,
+          quick_replies: helper.buildMenu(),
+        });
+      }
     }
   });
 };
