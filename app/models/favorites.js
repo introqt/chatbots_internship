@@ -7,7 +7,6 @@ const favoritesSchema = new mongoose.Schema({
   chatId: Number,
   sku: {
     type: Number,
-    unique: true,
   },
   name: String,
   image: String,

@@ -338,33 +338,51 @@ module.exports = (controller) => {
 
   controller.hears('^shop', 'facebook_postback,message_received', async (bot, message) => {
     const page = 1;
-    await bby.getMovies(page)
-      .then((data) => {
-        bot.say({
-          text: 'There is a list of available products:',
-          channel: message.user,
+    const chatId = message.user;
+    let text = '';
+    let answer;
+
+    const [err, products] = await to(bby.getMovies(page));
+    if (err) console.log(err);
+
+    if (products) {
+      if (products.length > 0) {
+        text = 'Oops! Products not found!';
+      } else {
+        text = 'There is a list of available products:';
+      }
+
+      const [err, client] = await to(user.findUser({ chatId }));
+      if (err) console.log(err);
+      if (client && client.gifts > 0) {
+        await bot.reply(message, {
+          text: `\nYou have ${client.gifts} products for free`,
         });
-        const answer = {
-          attachment: {
-            type: 'template',
-            payload: {
-              template_type: 'generic',
-              elements: helper.createProductsGallery(data.products),
-            },
-          },
-          quick_replies: [
-            {
-              content_type: 'text',
-              title: `Page ${page + 1}`,
-              payload: `Page ${page + 1}`,
-            },
-          ],
-        };
-        bot.reply(message, answer);
-      })
-      .catch((err) => {
-        bot.reply(message, err);
+      }
+
+      await bot.reply(message, {
+        text,
       });
+
+      answer = {
+        attachment: {
+          type: 'template',
+          payload: {
+            template_type: 'generic',
+            elements: helper.createProductsGallery(products.products),
+          },
+        },
+        quick_replies: [
+          {
+            content_type: 'text',
+            title: `Page ${page + 1}`,
+            payload: `Page ${page + 1}`,
+          },
+        ],
+      };
+    }
+
+    bot.reply(message, answer);
   });
 
   controller.hears('Page (.*)', 'message_received', async (bot, message) => {
@@ -461,6 +479,18 @@ module.exports = (controller) => {
             await to(history.createHistory({
               chatId, sku, name, image, salePrice, location,
             }));
+
+            // is it gift or not?
+            const [err, client] = await to(user.findUser({ chatId }));
+            if (err) console.log(err);
+            if (client) {
+              const { gifts } = client;
+              if (gifts > 0) {
+                client.gifts -= 1;
+                client.save();
+                convo.say('This products was purchased for free according to your referral rewards!');
+              }
+            }
             convo.next();
           });
           convo.next();
@@ -499,6 +529,28 @@ module.exports = (controller) => {
     });
   });
 
+  controller.on('facebook_referral', (bot, message) => {
+    bot.reply(message, {
+      text: 'You\'ve already activated this referral link!',
+      quick_replies: [{
+        content_type: 'text',
+        title: 'To the menu',
+        payload: 'back',
+      }],
+    });
+  });
+
+  controller.hears('Начать', 'facebook_postback,message_received', (bot, message) => {
+    bot.reply(message, {
+      text: 'Welcome!',
+      quick_replies: [{
+        content_type: 'text',
+        title: 'To the menu',
+        payload: 'back',
+      }],
+    });
+  });
+
   controller.on('facebook_postback,message_received', async (bot, message) => {
     // referral check
     if (message.postback && message.postback.referral) {
@@ -524,16 +576,15 @@ module.exports = (controller) => {
       // if no duplicates - push a new ref to user
       if (duplicates === false) {
         client.referrals.push(newUser);
-        client.save();
         let text = 'Your link has been activated!';
 
         // count if a user has 3 active referalls
         if (client.referrals.length % 3 === 0) {
           // giving a gift to a user-referrer
           client.gifts += 1;
-          client.save();
-          text = 'Gratz! 3 friends of yours have been activated your link!\nYou have a free purchase now!';
         }
+        client.save();
+        text += '\nGratz! 3 friends of yours have been activated your link!\nYou have a free purchase now!';
 
         bot.say({ channel: refUser, text });
       }
@@ -547,15 +598,25 @@ module.exports = (controller) => {
       const chatId = newUser.id;
       const fullName = newUser.full_name;
 
-      const [err, client] = await to(user.findOrCreateUser({ chatId, fullName }));
+      const [err, client] = await to(user.findUser({ chatId }));
       if (err) console.log(err);
 
       if (client) {
+        client.fullName = fullName;
+        client.save();
+
         bot.reply(message, {
           text: `Nice to see you here, ${client.fullName}!\nChoose something below`,
           quick_replies: helper.buildMenu(),
         });
+      } else {
+        // if not in db yet, save user info
+        const [err, newUser] = await to(user.createUser({ chatId, fullName }));
+        if (err) console.log(err);
+        if (newUser) {
+          console.log(newUser);
+        }
       }
-    }
+    } else console.log('Error getting user full name;');
   });
 };

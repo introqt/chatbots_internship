@@ -6,6 +6,7 @@ const userSchema = new mongoose.Schema({
   chatId: {
     type: Number,
     required: true,
+    unique: true,
   },
   fullName: String,
   phone: String,
@@ -45,6 +46,15 @@ module.exports.findUser = (query) => {
       if (err) {
         reject(err);
       }
+      resolve(result);
+    });
+  });
+};
+
+module.exports.createUser = (query) => {
+  return new Promise((resolve, reject) => {
+    user.create(query, (err, result) => {
+      if (err) reject(err);
       resolve(result);
     });
   });

@@ -6,7 +6,8 @@ mongoose.connect(`${process.env.MONGO_URI}`, {
   autoReconnect: true,
   useNewUrlParser: true,
   useCreateIndex: true,
-  dbName: 'test',
+  // ssl: true,
+  // dbName: 'test',
 }).catch(err => console.log('Mongo connection error', err));
 
 module.exports = mongoose;
