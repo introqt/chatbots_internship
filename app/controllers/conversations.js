@@ -28,12 +28,12 @@ module.exports = (controller) => {
     });
   });
 
-  controller.hears('^back', 'facebook_postback', (bot, message) => {
-    bot.reply(message, {
-      text: 'Menu',
-      quick_replies: helper.buildMenu(),
-    });
-  });
+  // controller.hears('^back', 'facebook_postback', (bot, message) => {
+  //   bot.reply(message, {
+  //     text: 'Menu',
+  //     quick_replies: helper.buildMenu(),
+  //   });
+  // });
 
   controller.hears('My purchases', 'message_received', async (bot, message) => {
     const chatId = message.user;
@@ -325,7 +325,7 @@ module.exports = (controller) => {
         }));
         if (err) console.log(err);
 
-        text = 'This product was successfully added to your favorites!';
+        if (favorite) text = 'This product was successfully added to your favorites!';
       } else {
         text = 'Oops! Something went wrong!';
       }

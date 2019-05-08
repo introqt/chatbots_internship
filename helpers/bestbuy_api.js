@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 const bby = require('bestbuy')(`${process.env.BBY_API_KEY}`);
 
 function getAllCategories() {
