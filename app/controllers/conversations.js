@@ -515,12 +515,25 @@ module.exports = (controller) => {
     });
   });
 
-  controller.hears(['invite', 'friend', 'Invite a friend'], 'facebook_postback, message_received', (bot, message) => {
+  controller.hears(['invite', 'friend', 'Invite a friend'], 'facebook_postback, message_received', async (bot, message) => {
     const chatId = message.user;
+    let referralCount;
+    let gifts;
+    let bonusText = '';
     const link = encodeURI(`https://m.me/${process.env.FACEBOOK_PAGE_ID}?ref=${chatId}`);
 
+    const [err, client] = await to(user.findUser({ chatId }));
+    if (err) console.log(err);
+    if (client) {
+      // eslint-disable-next-line prefer-destructuring
+      gifts = client.gifts;
+      referralCount = client.referrals.length;
+
+      bonusText = `You have ${referralCount} activated referrals.\nYou have ${gifts} free purchases left`;
+    }
+
     bot.reply(message, {
-      text: `Your link for friends: ${link}.\nSend it to 3 friends to get a gift.`,
+      text: `Your link for friends: ${link}.\nSend it to 3 friends to get a gift.\n\n${bonusText}`,
       quick_replies: [{
         content_type: 'text',
         title: 'Back',
@@ -587,6 +600,15 @@ module.exports = (controller) => {
         text += '\nGratz! 3 friends of yours have been activated your link!\nYou have a free purchase now!';
 
         bot.say({ channel: refUser, text });
+        bot.say({
+          channel: newUser,
+          text: 'Welcome! Use menu to navigate the bot.',
+          quick_replies: [{
+            content_type: 'text',
+            title: 'Back',
+            payload: 'facebook_postback',
+          }],
+        });
       }
     }
 
