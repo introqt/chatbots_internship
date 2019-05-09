@@ -506,6 +506,66 @@ module.exports = (controller) => {
                 payload: 'back',
               }],
             });
+
+            // 6000 milisecond in 1 minute
+            const oneMinute = 60000;
+            setTimeout(() => {
+              bot.reply(message, {
+                text: 'Please tell me, did you like the product?\nHow do you recommend our product to your friends?',
+                quick_replies: [
+                  {
+                    content_type: 'text',
+                    title: 'Rate 10',
+                    payload: 'Rate 10',
+                  },
+                  {
+                    content_type: 'text',
+                    title: 'Rate 9',
+                    payload: 'Rate 9',
+                  },
+                  {
+                    content_type: 'text',
+                    title: 'Rate 8',
+                    payload: 'Rate 8',
+                  },
+                  {
+                    content_type: 'text',
+                    title: 'Rate 7',
+                    payload: 'Rate 7',
+                  },
+                  {
+                    content_type: 'text',
+                    title: 'Rate 6',
+                    payload: 'Rate 6',
+                  },
+                  {
+                    content_type: 'text',
+                    title: 'Rate 5',
+                    payload: 'Rate 5',
+                  },
+                  {
+                    content_type: 'text',
+                    title: 'Rate 4',
+                    payload: 'Rate 4',
+                  },
+                  {
+                    content_type: 'text',
+                    title: 'Rate 3',
+                    payload: 'Rate 3',
+                  },
+                  {
+                    content_type: 'text',
+                    title: 'Rate 2',
+                    payload: 'Rate 2',
+                  },
+                  {
+                    content_type: 'text',
+                    title: 'Rate 1',
+                    payload: 'Rate 1',
+                  },
+                ],
+              });
+            }, oneMinute);
           } else {
             // this happens if the conversation ended prematurely for some reason
             bot.reply(message, 'OK, nevermind!');
