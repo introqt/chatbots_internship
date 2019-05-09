@@ -507,8 +507,8 @@ module.exports = (controller) => {
               }],
             });
 
-            // 6000 milisecond in 1 minute
-            const oneMinute = 60000;
+            // 30000 milisecond in 30 seconds
+            const halfMinute = 30000;
             setTimeout(() => {
               bot.reply(message, {
                 text: 'Please tell me, did you like the product?\nHow do you recommend our product to your friends?',
@@ -565,13 +565,24 @@ module.exports = (controller) => {
                   },
                 ],
               });
-            }, oneMinute);
+            }, halfMinute);
           } else {
             // this happens if the conversation ended prematurely for some reason
             bot.reply(message, 'OK, nevermind!');
           }
         });
       }
+    });
+  });
+
+  controller.hears('Rate (.*)', 'message_received', (bot, message) => {
+    bot.reply(message, {
+      text: 'Thank you!',
+      quick_replies: [{
+        content_type: 'text',
+        title: 'Main menu',
+        payload: 'back',
+      }],
     });
   });
 
