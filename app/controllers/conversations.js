@@ -569,46 +569,57 @@ module.exports = (controller) => {
     if (message.postback && message.postback.referral) {
       const refUser = message.postback.referral.ref;
       const newUser = { chatId: message.user };
+      // eslint-disable-next-line prefer-template
+      const newChatId = newUser.chatId + '';
+      console.log(refUser, newChatId, refUser === newChatId);
 
       // search for a user that created ref link
       const [err, client] = await to(user.findUser({ chatId: refUser }));
       if (err) console.log(err);
 
-      // no duplicates in referrals array
-      let duplicates = false;
-      client.referrals.forEach((referral) => {
-        // eslint-disable-next-line eqeqeq
-        if (referral.chatId == newUser.chatId) {
-          console.log('Referral is already in db!');
-          duplicates = true;
-          return false;
-        }
-        return true;
-      });
-
-      // if no duplicates - push a new ref to user
-      if (duplicates === false) {
-        client.referrals.push(newUser);
-        let text = 'Your link has been activated!';
-
-        // count if a user has 3 active referalls
-        if (client.referrals.length % 3 === 0) {
-          // giving a gift to a user-referrer
-          client.gifts += 1;
-        }
-        client.save();
-        text += '\nGratz! 3 friends of yours have been activated your link!\nYou have a free purchase now!';
-
-        bot.say({ channel: refUser, text });
-        bot.say({
-          channel: newUser,
-          text: 'Welcome! Use menu to navigate the bot.',
-          quick_replies: [{
-            content_type: 'text',
-            title: 'Back',
-            payload: 'facebook_postback',
-          }],
+      // user can't be his own referral
+      if (refUser !== newChatId) {
+        // no duplicates in referrals array
+        let duplicates = false;
+        client.referrals.forEach((referral) => {
+          // eslint-disable-next-line eqeqeq
+          if (referral.chatId == newUser.chatId) {
+            console.log('Referral is already in db!');
+            duplicates = true;
+            return false;
+          }
+          return true;
         });
+
+        // if no duplicates - push a new ref to user
+        if (duplicates === false) {
+          client.referrals.push(newUser);
+          let text = 'Your link has been activated!';
+
+          // count if a user has 3 active referalls
+          if (client.referrals.length % 3 === 0) {
+            // giving a gift to a user-referrer
+            client.gifts += 1;
+          }
+          client.save();
+          text += '\nGratz! 3 friends of yours have been activated your link!\nYou have a free purchase now!';
+
+          // notification about activating ref link
+          bot.say({ channel: refUser, text });
+
+          // welcome message to a new user
+          bot.say({
+            channel: newChatId,
+            text: 'Welcome! Use menu to navigate the bot.',
+            quick_replies: [{
+              content_type: 'text',
+              title: 'Back',
+              payload: 'facebook_postback',
+            }],
+          });
+        }
+      } else {
+        bot.reply(message, { text: 'You can\'t be your own referral!' });
       }
     }
 
